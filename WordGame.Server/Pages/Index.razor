@@ -1,0 +1,101 @@
+@page "/"
+@inject GameClientService Game
+@implements IDisposable
+
+<div class="game-container">
+    <h1 style="color: #7dcfff; margin-bottom: 24px;">Word Game P2P</h1>
+
+    <div class="input-group">
+        <label>Your name</label>
+        <input type="text" @bind="_playerName" disabled="@Game.IsConnected" placeholder="Player" />
+    </div>
+
+    <div class="input-group">
+        @if (Game.IsConnected)
+        {
+            <button class="btn btn-connect" @onclick="Disconnect">Disconnect</button>
+        }
+        else
+        {
+            <button class="btn btn-connect" @onclick="Connect">Connect</button>
+        }
+    </div>
+
+    <div class="letters-box">
+        <label>Letters</label>
+        <div class="letters-display">@(string.IsNullOrEmpty(Game.CurrentLetters) ? "—" : string.Join("  ", Game.CurrentLetters.ToCharArray()))</div>
+    </div>
+
+    <div class="status-box">
+        @if (Game.StatusMessages.Count == 0)
+        {
+            <span>Connect node and wait for round start from the current leader.</span>
+        }
+        else
+        {
+            @foreach (var msg in Game.StatusMessages)
+            {
+                <div>@msg</div>
+            }
+        }
+    </div>
+
+    <div class="word-input-row">
+        <input type="text" @bind="_wordInput" disabled="@(!Game.CanSubmit)"
+               placeholder="Type your word..." @onkeydown="OnKeyDown" />
+        <button class="btn btn-submit" disabled="@(!Game.CanSubmit)" @onclick="Submit">Submit</button>
+    </div>
+
+    @if (Game.IsConnected)
+    {
+        <div class="connection-status">
+            Connected as @Game.PlayerName (@Game.NodeId), peers: @Game.PeerCount, leader: @(Game.IsLeader ? "yes" : "no"), registry: @(Game.RegistryHealthy ? "ok" : "reconnecting")
+        </div>
+    }
+</div>
+
+@code {
+    private string _playerName = "Player";
+    private string _wordInput = "";
+    private Action? _stateChangedHandler;
+
+    protected override void OnInitialized()
+    {
+        _stateChangedHandler = () => _ = InvokeAsync(StateHasChanged);
+        Game.OnStateChanged += _stateChangedHandler;
+    }
+
+    private async Task Connect()
+    {
+        await Game.ConnectAsync(_playerName);
+        StateHasChanged();
+    }
+
+    private void Disconnect()
+    {
+        Game.Disconnect();
+        StateHasChanged();
+    }
+
+    private async Task Submit()
+    {
+        var result = await Game.SubmitWordAsync(_wordInput);
+        if (result.Accepted)
+            _wordInput = "";
+        StateHasChanged();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await Submit();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_stateChangedHandler != null)
+            Game.OnStateChanged -= _stateChangedHandler;
+    }
+}

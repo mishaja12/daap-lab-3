@@ -1,0 +1,65 @@
+syntax = "proto3";
+option csharp_namespace = "WordGame.Grpc";
+
+service NodeRegistry {
+  rpc RegisterNode(RegisterNodeRequest) returns (RegisterNodeResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  rpc GetPeers(GetPeersRequest) returns (GetPeersResponse);
+}
+
+service PeerGame {
+  rpc PublishEvent(SignedGameEventRequest) returns (PublishEventResponse);
+}
+
+message RegisterNodeRequest {
+  string node_id = 1;
+  string endpoint = 2;
+  string public_key = 3;
+  string dictionary_hash = 4;
+}
+
+message RegisterNodeResponse {
+  bool accepted = 1;
+  string message = 2;
+  repeated NodeInfo peers = 3;
+}
+
+message HeartbeatRequest {
+  string node_id = 1;
+}
+
+message HeartbeatResponse {
+  bool accepted = 1;
+  string message = 2;
+}
+
+message GetPeersRequest {
+  string requester_node_id = 1;
+}
+
+message GetPeersResponse {
+  repeated NodeInfo peers = 1;
+}
+
+message NodeInfo {
+  string node_id = 1;
+  string endpoint = 2;
+  string public_key = 3;
+  string dictionary_hash = 4;
+  int64 last_seen_unix_seconds = 5;
+}
+
+message SignedGameEventRequest {
+  string event_id = 1;
+  string sender_node_id = 2;
+  string event_type = 3;
+  string payload_json = 4;
+  string payload_hash = 5;
+  string signature = 6;
+  int64 timestamp_unix_milliseconds = 7;
+}
+
+message PublishEventResponse {
+  bool accepted = 1;
+  string message = 2;
+}
