@@ -1,4 +1,4 @@
-# Word Game — decentralized Lab #3
+# Word Game - decentralized Lab #3
 
 Децентралізована версія WordGame:
 - сервер виконує тільки роль **реєстру вузлів**;
